@@ -1,39 +1,25 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { EvaluationResult, GradeLevel, RubricType } from '@/types';
-
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+import OpenAI from "openai";
 
 export async function evaluateEssay(
   essay: string,
-  gradeLevel: GradeLevel,
-  rubricType: RubricType
-): Promise<EvaluationResult> {
-  const gradeLevelLabel: Record<GradeLevel, string> = {
-    elementary: 'Elementary School',
-    middle_school: 'Middle School',
-    high_school: 'High School',
-    university: 'University',
-  };
+  gradeLevel: string,
+  rubricType: string,
+) {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
 
-  const rubricLabel: Record<RubricType, string> = {
-    argumentative: 'Argumentative',
-    narrative: 'Narrative',
-    expository: 'Expository',
-    persuasive: 'Persuasive',
-    research: 'Research Paper',
-  };
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert essay evaluator for educational institutions. Evaluate the following student essay based on the specified rubric type and grade level. Be constructive, specific, and encouraging.
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1024,
-    system: `You are an expert essay evaluator for educational institutions. Evaluate the following student essay based on the specified rubric type and grade level. Be constructive, specific, and encouraging.
+Grade Level: ${gradeLevel}
+Rubric Type: ${rubricType}
 
-Grade Level: ${gradeLevelLabel[gradeLevel]}
-Rubric Type: ${rubricLabel[rubricType]}
-
-Respond ONLY with valid JSON in this exact format:
+Respond ONLY with valid JSON in this exact format, no markdown, no code blocks:
 {
   "grammar_score": <1-10>,
   "structure_score": <1-10>,
@@ -42,12 +28,23 @@ Respond ONLY with valid JSON in this exact format:
   "overall_grade": "<A+|A|A-|B+|B|B-|C+|C|C-|D|F>",
   "strengths": ["string", "string", "string"],
   "improvements": ["string", "string", "string"],
-  "detailed_feedback": "A 2-3 sentence summary of the essay's quality with specific, actionable advice."
+  "detailed_feedback": "A 2-3 sentence summary of the essay quality with specific, actionable advice."
 }`,
-    messages: [{ role: 'user', content: essay }],
+      },
+      {
+        role: "user",
+        content: essay,
+      },
+    ],
+    temperature: 0.3,
   });
 
-  const text = message.content[0].type === 'text' ? message.content[0].text : '';
-  const result = JSON.parse(text) as EvaluationResult;
-  return result;
+  const content = response.choices[0].message.content;
+  if (!content) throw new Error("No response from AI");
+
+  const cleaned = content
+    .replace(/```json\n?/g, "")
+    .replace(/```\n?/g, "")
+    .trim();
+  return JSON.parse(cleaned);
 }
