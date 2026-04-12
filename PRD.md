@@ -1,9 +1,11 @@
 # EssayGrade AI — Full Build Specification
 
 ## Overview
+
 Build a complete SaaS web application called **EssayGrade AI** that lets teachers paste student essays and receive instant AI-powered rubric-based feedback. The app includes a public landing page, authentication, the evaluation tool, a dashboard, PDF export, and Stripe payments.
 
 ## Tech Stack (MANDATORY — do not substitute)
+
 - **Framework**: Next.js 14 (App Router, TypeScript)
 - **Styling**: Tailwind CSS
 - **Database + Auth**: Supabase (use @supabase/supabase-js + @supabase/ssr)
@@ -13,6 +15,7 @@ Build a complete SaaS web application called **EssayGrade AI** that lets teacher
 - **Deployment target**: Vercel
 
 ## Project Structure
+
 ```
 essaygrade-ai/
 ├── package.json
@@ -56,6 +59,7 @@ essaygrade-ai/
 ## Database Schema (Supabase)
 
 ### Table: profiles
+
 ```sql
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -70,6 +74,7 @@ CREATE TABLE profiles (
 ```
 
 ### Table: evaluations
+
 ```sql
 CREATE TABLE evaluations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,6 +89,7 @@ CREATE TABLE evaluations (
 ```
 
 ### Row Level Security
+
 ```sql
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE evaluations ENABLE ROW LEVEL SECURITY;
@@ -95,6 +101,7 @@ CREATE POLICY "Users can insert own evaluations" ON evaluations FOR INSERT WITH 
 ```
 
 ## Environment Variables (.env.local.example)
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -109,6 +116,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Page Specifications
 
 ### 1. Landing Page (/)
+
 - Hero section: headline "Grade Essays in Seconds, Not Hours", subtitle, CTA button → /signup
 - 3 feature cards: "AI-Powered Feedback", "Rubric-Based Scoring", "PDF Reports"
 - How it works: 3 steps (Paste → Analyze → Download)
@@ -117,12 +125,14 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - Must look professional and modern. Use a blue/indigo color scheme.
 
 ### 2. Login (/login) + Signup (/signup)
+
 - Simple centered card with email + password form
 - Supabase auth (email/password)
 - Redirect to /dashboard after login
 - Link between login and signup pages
 
 ### 3. Dashboard (/dashboard) — PROTECTED
+
 - Show user's plan (Free/Pro) and usage count (X/10 this month)
 - Table/cards of past evaluations: date, student name, grade, rubric type, overall score
 - Click any evaluation → expand to see full results
@@ -130,6 +140,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - If no evaluations yet, show empty state with CTA
 
 ### 4. Evaluate (/evaluate) — PROTECTED
+
 - Form with:
   - Textarea for essay (min 50 chars, max 10000 chars)
   - Student name (optional text input)
@@ -153,6 +164,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
   - "Evaluate Another" button
 
 ### 5. Pricing (/pricing)
+
 - Two cards side by side:
   - Free: 10 evaluations/month, basic feedback, $0
   - Pro: Unlimited evaluations, detailed feedback, PDF export, $15/month
@@ -162,7 +174,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## API Specifications
 
 ### POST /api/evaluate
+
 **Request body:**
+
 ```json
 {
   "essay": "string (the essay text)",
@@ -173,6 +187,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 **Claude prompt (use this EXACT system prompt):**
+
 ```
 You are an expert essay evaluator for educational institutions. Evaluate the following student essay based on the specified rubric type and grade level. Be constructive, specific, and encouraging.
 
@@ -195,16 +210,19 @@ Respond ONLY with valid JSON in this exact format:
 **Response:** Return the parsed JSON from Claude.
 
 ### POST /api/checkout
+
 - Create Stripe Checkout Session for Pro plan ($15/month)
 - Return session URL
 - On success, update user's plan in profiles table
 
 ### POST /api/webhook
+
 - Handle Stripe webhook events:
   - checkout.session.completed → set plan to 'pro'
   - customer.subscription.deleted → set plan to 'free'
 
 ## Design Requirements
+
 - Color scheme: Indigo/blue primary (#4F46E5), with green for success, orange for warnings
 - Font: Inter (from Google Fonts)
 - Responsive: mobile-first, works on phone and desktop
@@ -215,6 +233,7 @@ Respond ONLY with valid JSON in this exact format:
 - Toast notifications for success/error feedback
 
 ## Build Order (FOLLOW THIS SEQUENCE)
+
 1. Initialize Next.js project with TypeScript + Tailwind
 2. Install all dependencies in ONE command:
    ```
@@ -236,6 +255,7 @@ Respond ONLY with valid JSON in this exact format:
 16. Git commit with message: "feat: complete EssayGrade AI MVP"
 
 ## Usage Limit Logic
+
 ```typescript
 // In /api/evaluate route:
 // 1. Get user profile
@@ -246,6 +266,7 @@ Respond ONLY with valid JSON in this exact format:
 ```
 
 ## IMPORTANT CONSTRAINTS
+
 - Do NOT use any AI model other than Claude (claude-sonnet-4-20250514)
 - Do NOT use Prisma or any ORM — use Supabase JS client directly
 - Do NOT use NextAuth — use Supabase Auth

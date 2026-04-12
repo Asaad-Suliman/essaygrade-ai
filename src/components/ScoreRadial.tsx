@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { scoreColor } from '@/lib/utils';
+import { scoreColor } from "@/lib/utils";
 
 interface ScoreRadialProps {
   score: number;
@@ -41,7 +41,9 @@ export default function ScoreRadial({ score, label }: ScoreRadialProps) {
           <span className="text-2xl font-bold text-gray-800">{score}</span>
         </div>
       </div>
-      <span className="text-xs font-medium text-gray-500 text-center">{label}</span>
+      <span className="text-xs font-medium text-gray-500 text-center">
+        {label}
+      </span>
     </div>
   );
 }

@@ -24,12 +24,21 @@ export interface Profile {
   id: string;
   email: string;
   full_name: string | null;
-  plan: 'free' | 'pro';
+  plan: "free" | "pro";
   stripe_customer_id: string | null;
   evaluations_this_month: number;
   current_period_start: string;
   created_at: string;
 }
 
-export type GradeLevel = 'elementary' | 'middle_school' | 'high_school' | 'university';
-export type RubricType = 'argumentative' | 'narrative' | 'expository' | 'persuasive' | 'research';
+export type GradeLevel =
+  | "elementary"
+  | "middle_school"
+  | "high_school"
+  | "university";
+export type RubricType =
+  | "argumentative"
+  | "narrative"
+  | "expository"
+  | "persuasive"
+  | "research";

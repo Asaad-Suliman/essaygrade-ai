@@ -1,19 +1,22 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getStripe } from '@/lib/stripe';
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getStripe } from "@/lib/stripe";
 
 export async function POST() {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('stripe_customer_id, email')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("stripe_customer_id, email")
+      .eq("id", user.id)
       .single();
 
     const stripe = getStripe();
@@ -26,22 +29,25 @@ export async function POST() {
       });
       customerId = customer.id;
       await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ stripe_customer_id: customerId })
-        .eq('id', user.id);
+        .eq("id", user.id);
     }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      payment_method_types: ['card'],
-      mode: 'subscription',
+      payment_method_types: ["card"],
+      mode: "subscription",
       line_items: [
         {
           price_data: {
-            currency: 'usd',
-            product_data: { name: 'EssayGrade AI Pro', description: 'Unlimited essay evaluations + PDF export' },
+            currency: "usd",
+            product_data: {
+              name: "EssayGrade AI Pro",
+              description: "Unlimited essay evaluations + PDF export",
+            },
             unit_amount: 1500,
-            recurring: { interval: 'month' },
+            recurring: { interval: "month" },
           },
           quantity: 1,
         },
@@ -53,7 +59,10 @@ export async function POST() {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    console.error('Checkout error:', err);
-    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
+    console.error("Checkout error:", err);
+    return NextResponse.json(
+      { error: "Failed to create checkout session" },
+      { status: 500 },
+    );
   }
 }

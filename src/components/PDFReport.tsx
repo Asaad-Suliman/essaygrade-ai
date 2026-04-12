@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { EvaluationResult } from '@/types';
-import { Download } from 'lucide-react';
+import { EvaluationResult } from "@/types";
+import { Download } from "lucide-react";
 import {
   Document,
   Page,
@@ -9,42 +9,57 @@ import {
   View,
   StyleSheet,
   PDFDownloadLink,
-} from '@react-pdf/renderer';
+} from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Helvetica', fontSize: 11, color: '#1f2937' },
-  title: { fontSize: 22, fontFamily: 'Helvetica-Bold', color: '#4f46e5', marginBottom: 4 },
-  subtitle: { fontSize: 12, color: '#6b7280', marginBottom: 20 },
+  page: {
+    padding: 40,
+    fontFamily: "Helvetica",
+    fontSize: 11,
+    color: "#1f2937",
+  },
+  title: {
+    fontSize: 22,
+    fontFamily: "Helvetica-Bold",
+    color: "#4f46e5",
+    marginBottom: 4,
+  },
+  subtitle: { fontSize: 12, color: "#6b7280", marginBottom: 20 },
   section: { marginBottom: 16 },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Helvetica-Bold',
-    color: '#374151',
+    fontFamily: "Helvetica-Bold",
+    color: "#374151",
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: "#e5e7eb",
     paddingBottom: 4,
     marginBottom: 8,
   },
-  scoreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
+  scoreRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 8,
+  },
   scoreBox: {
-    width: '22%',
-    backgroundColor: '#f3f4f6',
+    width: "22%",
+    backgroundColor: "#f3f4f6",
     borderRadius: 6,
     padding: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  scoreNumber: { fontSize: 20, fontFamily: 'Helvetica-Bold', color: '#4f46e5' },
-  scoreLabel: { fontSize: 9, color: '#6b7280', marginTop: 2 },
+  scoreNumber: { fontSize: 20, fontFamily: "Helvetica-Bold", color: "#4f46e5" },
+  scoreLabel: { fontSize: 9, color: "#6b7280", marginTop: 2 },
   grade: {
     fontSize: 28,
-    fontFamily: 'Helvetica-Bold',
-    color: '#4f46e5',
-    textAlign: 'center',
+    fontFamily: "Helvetica-Bold",
+    color: "#4f46e5",
+    textAlign: "center",
     marginBottom: 4,
   },
-  bullet: { flexDirection: 'row', gap: 6, marginBottom: 4 },
-  bulletDot: { color: '#4f46e5', fontFamily: 'Helvetica-Bold' },
-  body: { lineHeight: 1.6, color: '#374151' },
+  bullet: { flexDirection: "row", gap: 6, marginBottom: 4 },
+  bulletDot: { color: "#4f46e5", fontFamily: "Helvetica-Bold" },
+  body: { lineHeight: 1.6, color: "#374151" },
 });
 
 interface PDFDocProps {
@@ -60,7 +75,7 @@ function PDFDoc({ result, studentName, gradeLevel, rubricType }: PDFDocProps) {
       <Page size="A4" style={styles.page}>
         <Text style={styles.title}>EssayGrade AI — Evaluation Report</Text>
         <Text style={styles.subtitle}>
-          {studentName ? `Student: ${studentName} · ` : ''}
+          {studentName ? `Student: ${studentName} · ` : ""}
           {gradeLevel} · {rubricType}
         </Text>
 
@@ -73,10 +88,13 @@ function PDFDoc({ result, studentName, gradeLevel, rubricType }: PDFDocProps) {
           <Text style={styles.sectionTitle}>Scores</Text>
           <View style={styles.scoreRow}>
             {[
-              { label: 'Grammar', val: result.grammar_score },
-              { label: 'Structure', val: result.structure_score },
-              { label: 'Argumentation', val: result.argumentation_score },
-              { label: 'Critical Thinking', val: result.critical_thinking_score },
+              { label: "Grammar", val: result.grammar_score },
+              { label: "Structure", val: result.structure_score },
+              { label: "Argumentation", val: result.argumentation_score },
+              {
+                label: "Critical Thinking",
+                val: result.critical_thinking_score,
+              },
             ].map((s) => (
               <View key={s.label} style={styles.scoreBox}>
                 <Text style={styles.scoreNumber}>{s.val}</Text>
@@ -115,21 +133,33 @@ function PDFDoc({ result, studentName, gradeLevel, rubricType }: PDFDocProps) {
   );
 }
 
-export function PDFDownloadButton({ result, studentName, gradeLevel, rubricType }: PDFDocProps) {
+export function PDFDownloadButton({
+  result,
+  studentName,
+  gradeLevel,
+  rubricType,
+}: PDFDocProps) {
   const fileName = studentName
-    ? `${studentName.replace(/\s+/g, '_')}_evaluation.pdf`
-    : 'essay_evaluation.pdf';
+    ? `${studentName.replace(/\s+/g, "_")}_evaluation.pdf`
+    : "essay_evaluation.pdf";
 
   return (
     <PDFDownloadLink
-      document={<PDFDoc result={result} studentName={studentName} gradeLevel={gradeLevel} rubricType={rubricType} />}
+      document={
+        <PDFDoc
+          result={result}
+          studentName={studentName}
+          gradeLevel={gradeLevel}
+          rubricType={rubricType}
+        />
+      }
       fileName={fileName}
       className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
     >
       {({ loading }) => (
         <>
           <Download className="h-4 w-4" />
-          {loading ? 'Generating PDF...' : 'Download PDF'}
+          {loading ? "Generating PDF..." : "Download PDF"}
         </>
       )}
     </PDFDownloadLink>
