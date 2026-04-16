@@ -57,18 +57,61 @@ export async function POST(request: Request) {
       profile.evaluations_this_month = 0;
     }
 
-    // Check usage limit
-    if (profile.plan === "free" && profile.evaluations_this_month >= 10) {
+    // Check usage limit and atomically reserve a slot for free users
+    if (profile.plan === "free") {
+      if (profile.evaluations_this_month >= 10) {
+        return NextResponse.json(
+          { error: "Monthly limit reached. Upgrade to Pro." },
+          { status: 403 },
+        );
+      }
+
+      // Optimistic lock: only increment if the count hasn't changed since we read it.
+      // This prevents two concurrent requests from both passing the limit check.
+      const { data: claimed } = await supabase
+        .from("profiles")
+        .update({ evaluations_this_month: profile.evaluations_this_month + 1 })
+        .eq("id", user.id)
+        .eq("evaluations_this_month", profile.evaluations_this_month)
+        .select("evaluations_this_month")
+        .single();
+
+      if (!claimed) {
+        // A concurrent request already modified the count — re-read and check
+        const { data: freshProfile } = await supabase
+          .from("profiles")
+          .select("evaluations_this_month")
+          .eq("id", user.id)
+          .single();
+
+        if (!freshProfile || freshProfile.evaluations_this_month >= 10) {
+          return NextResponse.json(
+            { error: "Monthly limit reached. Upgrade to Pro." },
+            { status: 403 },
+          );
+        }
+      }
+    }
+
+    // Evaluate with AI — if this fails, roll back the reserved slot for free users
+    let results;
+    try {
+      results = await evaluateEssay(essay, gradeLevel, rubricType);
+    } catch (aiErr) {
+      console.error("AI evaluation failed:", aiErr);
+      if (profile.plan === "free") {
+        await supabase
+          .from("profiles")
+          .update({ evaluations_this_month: profile.evaluations_this_month })
+          .eq("id", user.id);
+      }
       return NextResponse.json(
-        { error: "Monthly limit reached. Upgrade to Pro." },
-        { status: 403 },
+        { error: "Evaluation failed. Please try again." },
+        { status: 500 },
       );
     }
 
-    // Evaluate with Claude
-    const results = await evaluateEssay(essay, gradeLevel, rubricType);
-
-    // Save evaluation
+    // Save evaluation — if this fails, roll back the reserved slot for free users
     const { error: insertError } = await supabase.from("evaluations").insert({
       user_id: user.id,
       essay_text: essay,
@@ -80,13 +123,25 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error("Failed to save evaluation:", insertError);
+      if (profile.plan === "free") {
+        await supabase
+          .from("profiles")
+          .update({ evaluations_this_month: profile.evaluations_this_month })
+          .eq("id", user.id);
+      }
+      return NextResponse.json(
+        { error: "Failed to save evaluation. Please try again." },
+        { status: 500 },
+      );
     }
 
-    // Increment usage count
-    await supabase
-      .from("profiles")
-      .update({ evaluations_this_month: profile.evaluations_this_month + 1 })
-      .eq("id", user.id);
+    // Increment usage count for pro users (no limit concern, no race risk)
+    if (profile.plan === "pro") {
+      await supabase
+        .from("profiles")
+        .update({ evaluations_this_month: profile.evaluations_this_month + 1 })
+        .eq("id", user.id);
+    }
 
     return NextResponse.json(results);
   } catch (err) {
