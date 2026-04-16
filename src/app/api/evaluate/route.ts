@@ -29,6 +29,34 @@ export async function POST(request: Request) {
       );
     }
 
+    const validGradeLevels: GradeLevel[] = [
+      "elementary",
+      "middle_school",
+      "high_school",
+      "university",
+    ];
+    const validRubricTypes: RubricType[] = [
+      "argumentative",
+      "narrative",
+      "expository",
+      "persuasive",
+      "research",
+    ];
+
+    if (!validGradeLevels.includes(gradeLevel)) {
+      return NextResponse.json(
+        { error: "Invalid grade level" },
+        { status: 400 },
+      );
+    }
+
+    if (!validRubricTypes.includes(rubricType)) {
+      return NextResponse.json(
+        { error: "Invalid rubric type" },
+        { status: 400 },
+      );
+    }
+
     // Get user profile
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
