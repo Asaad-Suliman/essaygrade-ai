@@ -40,21 +40,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    // Reset monthly count if period expired
+    // Reset monthly count if period expired — optimistic lock prevents double-reset
     const periodStart = new Date(profile.current_period_start);
     const now = new Date();
     const daysDiff =
       (now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24);
 
     if (daysDiff > 30) {
-      await supabase
+      const { data: resetResult } = await supabase
         .from("profiles")
         .update({
           evaluations_this_month: 0,
           current_period_start: now.toISOString(),
         })
-        .eq("id", user.id);
-      profile.evaluations_this_month = 0;
+        .eq("id", user.id)
+        .eq("current_period_start", profile.current_period_start) // only reset once
+        .select("evaluations_this_month")
+        .single();
+
+      if (resetResult) {
+        profile.evaluations_this_month = 0;
+      } else {
+        // Another concurrent request already reset the period — use its fresh count
+        const { data: freshProfile } = await supabase
+          .from("profiles")
+          .select("evaluations_this_month")
+          .eq("id", user.id)
+          .single();
+        if (freshProfile) {
+          profile.evaluations_this_month = freshProfile.evaluations_this_month;
+        }
+      }
     }
 
     // Check usage limit and atomically reserve a slot for free users
@@ -90,6 +106,14 @@ export async function POST(request: Request) {
             { status: 403 },
           );
         }
+
+        // Still under limit — increment with the fresh count to reserve the slot
+        await supabase
+          .from("profiles")
+          .update({
+            evaluations_this_month: freshProfile.evaluations_this_month + 1,
+          })
+          .eq("id", user.id);
       }
     }
 
